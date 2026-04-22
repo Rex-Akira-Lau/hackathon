@@ -52,7 +52,8 @@ class NLPProcessor:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.1,
-                max_tokens=200
+                max_tokens=200,
+                timeout=30
             )
             result_text = response.choices[0].message.content.strip()
 

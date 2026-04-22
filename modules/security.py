@@ -39,22 +39,24 @@ class SecurityManager:
         self.logger = logging.getLogger('security')
         self.logger.setLevel(logging.INFO)
         
-        # 创建日志目录
-        log_dir = 'logs'
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-        
-        # 创建文件处理器
-        log_file = os.path.join(log_dir, 'security.log')
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
-        
-        # 设置日志格式
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        
-        # 添加处理器
-        self.logger.addHandler(file_handler)
+        # 检查是否已经有处理器，避免重复添加
+        if not self.logger.handlers:
+            # 创建日志目录
+            log_dir = 'logs'
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            
+            # 创建文件处理器
+            log_file = os.path.join(log_dir, 'security.log')
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setLevel(logging.INFO)
+            
+            # 设置日志格式
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            file_handler.setFormatter(formatter)
+            
+            # 添加处理器
+            self.logger.addHandler(file_handler)
     
     def assess_risk(self, intent, user_input):
         # 评估操作风险级别

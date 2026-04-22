@@ -94,7 +94,7 @@ class TaskExecutor:
                     result = subprocess.run(['where', '/r', 'D:\\', filename], capture_output=True, text=True, timeout=10)
             else:
                 search_paths = ['/etc', '/home', '/var', '/opt', '/usr']
-                result = subprocess.run(['find'] + search_paths + ['-name', filename, '-type', 'f'], capture_output=True, text=True, timeout=30)
+                result = subprocess.run(['find'] + search_paths + ['-name', filename, '-type', 'f'], capture_output=True, text=True, timeout=10)
             if result.stdout.strip():
                 files = result.stdout.strip().split('\n')
                 if len(files) > 20:
