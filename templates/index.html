@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操作系统智能代理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .env-info {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px 30px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+        .env-info span {
+            margin-right: 20px;
+        }
+        .env-info .label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .capabilities {
+            background-color: #f0f4ff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 20px 30px;
+        }
+        .capabilities h3 {
+            font-size: 14px;
+            color: #495057;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .capability-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .capability-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #e9ecef;
+        }
+        .capability-item .name {
+            font-weight: 600;
+            font-size: 13px;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+        .capability-item .desc {
+            font-size: 11px;
+            color: #6c757d;
+        }
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px 30px;
+            background-color: #fafbfc;
+        }
+        .message {
+            margin-bottom: 16px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .message.agent {
+            background-color: white;
+            border: 1px solid #e9ecef;
+            border-left: 4px solid #667eea;
+        }
+        .message.agent .sender {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .message.agent .content {
+            color: #212529;
+        }
+        .message.agent .content .example {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .message.agent .content .example .label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 6px;
+        }
+        .message.agent .content .example code {
+            background-color: #e9ecef;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            color: #d63384;
+        }
+        .message.user {
+            background-color: #667eea;
+            color: white;
+            margin-left: 40px;
+        }
+        .message.system {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-left: 4px solid #ffc107;
+        }
+        .message.system .sender {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .message.system .content {
+            color: #856404;
+        }
+        .input-container {
+            display: flex;
+            padding: 20px 30px;
+            background-color: white;
+            border-top: 1px solid #e9ecef;
+            gap: 12px;
+        }
+        .input-container input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .input-container input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .input-container button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .input-container button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .input-container button:active {
+            transform: translateY(0);
+        }
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            padding: 15px 30px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+        .quick-actions span {
+            font-size: 12px;
+            color: #6c757d;
+            margin-right: 8px;
+        }
+        .quick-actions button {
+            padding: 6px 12px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-actions button:hover {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .features-banner {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 30px;
+            background-color: white;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .feature-item {
+            text-align: center;
+            padding: 10px 20px;
+        }
+        .feature-item .icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .feature-item .text {
+            font-size: 11px;
+            color: #6c757d;
+        }
+        .guide-section {
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 20px 30px;
+        }
+        .guide-section h3 {
+            font-size: 14px;
+            color: #495057;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .guide-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .guide-button {
+            padding: 8px 16px;
+            background-color: white;
+            border: 1px solid #667eea;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .guide-button:hover {
+            background-color: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>🖥️ 操作系统智能代理</h1>
+                    <p>基于大模型的智能系统管理助手 - 让系统管理更简单</p>
+                </div>
+                <button id="config-btn" style="padding: 8px 16px; background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: white; font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                    ⚙️ 配置
+                </button>
+            </div>
+        </div>
+        
+        <div class="features-banner">
+            <div class="feature-item">
+                <div class="icon">🎯</div>
+                <div class="text">意图识别</div>
+            </div>
+            <div class="feature-item">
+                <div class="icon">⚡</div>
+                <div class="text">自动执行</div>
+            </div>
+            <div class="feature-item">
+                <div class="icon">🛡️</div>
+                <div class="text">风险控制</div>
+            </div>
+            <div class="feature-item">
+                <div class="icon">🌐</div>
+                <div class="text">跨平台支持</div>
+            </div>
+            <div class="feature-item">
+                <div class="icon">📚</div>
+                <div class="text">新用户指引</div>
+            </div>
+        </div>
+        
+        <div class="env-info" id="environment-info">
+            <span>⏳ 正在检测环境信息...</span>
+        </div>
+        
+        <div class="capabilities" id="capabilities-section">
+            <h3>📋 我能帮您完成这些事情：</h3>
+            <div class="capability-grid" id="capability-grid">
+                <div class="capability-item">
+                    <div class="name">💾 磁盘管理</div>
+                    <div class="desc">查询磁盘使用情况、剩余空间</div>
+                </div>
+                <div class="capability-item">
+                    <div class="name">📁 文件搜索</div>
+                    <div class="desc">快速定位系统中的文件</div>
+                </div>
+                <div class="capability-item">
+                    <div class="name">📊 进程监控</div>
+                    <div class="desc">查看进程状态和资源占用</div>
+                </div>
+                <div class="capability-item">
+                    <div class="name">👥 用户管理</div>
+                    <div class="desc">创建和删除系统用户</div>
+                </div>
+                <div class="capability-item">
+                    <div class="name">💻 内存管理</div>
+                    <div class="desc">查看内存使用情况</div>
+                </div>
+                <div class="capability-item">
+                    <div class="name">📚 系统指引</div>
+                    <div class="desc">获取系统操作指南和帮助</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="guide-section">
+            <h3>📖 系统操作指引：</h3>
+            <div class="guide-buttons">
+                <button class="guide-button" onclick="quickAction('系统初始设置指南')">初始设置指南</button>
+                <button class="guide-button" onclick="quickAction('网络配置帮助')">网络配置指南</button>
+                <button class="guide-button" onclick="quickAction('安全加固指南')">安全加固指南</button>
+                <button class="guide-button" onclick="quickAction('性能优化指南')">性能优化指南</button>
+                <button class="guide-button" onclick="quickAction('存储管理指南')">存储管理指南</button>
+                <button class="guide-button" onclick="quickAction('系统备份指南')">备份指南</button>
+            </div>
+        </div>
+        
+        <div class="guide-section" id="security-section">
+            <h3>🛡️ 安全信息：</h3>
+            <div class="security-info" id="security-info">
+                <span>⏳ 加载安全信息中...</span>
+            </div>
+        </div>
+        
+        <div class="chat-container" id="chat-container">
+            <div class="message agent">
+                <div class="sender">🤖 智能代理</div>
+                <div class="content">
+                    您好！我是您的操作系统智能代理。<br><br>
+                    我具备以下核心能力：<br>
+                    <strong>1️⃣ 准确的意图解析能力</strong> - 能够理解您用自然语言描述的系统管理需求<br><br>
+                    <strong>2️⃣ 操作系统层面的任务执行能力</strong> - 自动执行相应的系统命令，支持多种Linux发行版<br><br>
+                    <strong>3️⃣ 过程与结果的自然语言反馈能力</strong> - 将执行过程和结果以清晰的自然语言呈现给您<br><br>
+                    
+                    <div class="example">
+                        <div class="label">💡 您可以尝试以下操作：</div>
+                        • <code>查询当前磁盘剩余空间</code><br>
+                        • <code>查看系统进程状态</code><br>
+                        • <code>搜索名为nginx的配置文件</code><br>
+                        • <code>创建一个名为testuser的用户</code>
+                    </div>
+                    
+                    <br>我现在运行在 <span id="distro-name">检测中...</span> 环境中，会自动适配相应的命令。
+                    <br>请随时告诉我您需要什么帮助！👇
+                </div>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <span>快速操作：</span>
+            <button onclick="quickAction('查询当前磁盘剩余空间')">磁盘使用情况</button>
+            <button onclick="quickAction('查看系统进程状态')">进程状态</button>
+            <button onclick="quickAction('搜索名为nginx的配置文件')">搜索nginx配置</button>
+            <button onclick="quickAction('查看内存使用情况')">内存使用情况</button>
+            <button onclick="quickAction('系统初始设置指南')">初始设置指南</button>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="请输入您的系统管理需求，例如：查询当前磁盘剩余空间">
+            <button onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+    
+    <script>
+        window.onload = function() {
+            loadEnvironmentInfo();
+            loadCapabilities();
+            loadSecurityInfo();
+            setInterval(loadSecurityInfo, 30000);
+        };
+        
+        function loadEnvironmentInfo() {
+            fetch('/api/env')
+                .then(response => response.json())
+                .then(data => {
+                    let envInfo = document.getElementById('environment-info');
+                    let distroName = document.getElementById('distro-name');
+                    let infoHtml = '';
+                    
+                    if (data.env_info) {
+                        if (data.env_info.system === 'Linux') {
+                            infoHtml = `<span><span class="label">🖥️ 系统：</span>${data.env_info.distro || data.env_info.system}</span>`;
+                            infoHtml += `<span><span class="label">📌 版本：</span>${data.env_info.release || 'Unknown'}</span>`;
+                            if (data.distro_category) {
+                                infoHtml += `<span><span class="label">📦 包管理器：</span>${data.package_manager || 'unknown'}</span>`;
+                                infoHtml += `<span><span class="label">🔧 服务管理：</span>${data.service_manager || 'unknown'}</span>`;
+                            }
+                            distroName.textContent = data.env_info.distro || data.env_info.system;
+                        } else {
+                            infoHtml = `<span><span class="label">🖥️ 系统：</span>${data.env_info.system}</span>`;
+                            distroName.textContent = data.env_info.system;
+                        }
+                        infoHtml += `<span><span class="label">👤 用户：</span>${data.env_info.user || 'Unknown'}</span>`;
+                        infoHtml += `<span><span class="label">🏠 主机名：</span>${data.env_info.hostname || 'Unknown'}</span>`;
+                    }
+                    
+                    envInfo.innerHTML = infoHtml;
+                })
+                .catch(error => {
+                    document.getElementById('environment-info').innerHTML = '<span style="color: #dc3545;">⚠️ 环境信息获取失败</span>';
+                });
+        }
+        
+        function loadCapabilities() {
+            fetch('/api/capabilities')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.intents) {
+                        let grid = document.getElementById('capability-grid');
+                        let html = '';
+                        
+                        const intentNames = {
+                            '磁盘使用': { icon: '💾', title: '磁盘管理', desc: '查询磁盘使用情况、剩余空间' },
+                            '文件搜索': { icon: '📁', title: '文件搜索', desc: '快速定位系统中的文件' },
+                            '进程状态': { icon: '📊', title: '进程监控', desc: '查看进程状态和资源占用' },
+                            '用户管理': { icon: '👥', title: '用户管理', desc: '创建和删除系统用户' },
+                            '内存使用': { icon: '💻', title: '内存管理', desc: '查看内存使用情况' },
+                            '用户指引': { icon: '📚', title: '系统指引', desc: '获取系统操作指南和帮助' }
+                        };
+                        
+                        data.intents.forEach(intent => {
+                            let info = intentNames[intent.name] || { icon: '✨', title: intent.description, desc: intent.examples ? intent.examples[0] : '' };
+                            html += `
+                                <div class="capability-item">
+                                    <div class="name">${info.icon} ${info.title}</div>
+                                    <div class="desc">${info.desc}</div>
+                                </div>
+                            `;
+                        });
+                        
+                        grid.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to load capabilities:', error);
+                });
+        }
+        
+        function loadSecurityInfo() {
+            fetch('/api/security')
+                .then(response => response.json())
+                .then(data => {
+                    let securityInfo = document.getElementById('security-info');
+                    let html = '';
+                    
+                    if (data.summary) {
+                        html += `<div style="margin-bottom: 10px;">`;
+                        html += `<span style="font-weight: 600; margin-right: 15px;">总操作数: ${data.summary.total_operations}</span>`;
+                        html += `<span style="font-weight: 600; margin-right: 15px;">高风险操作: ${data.summary.high_risk_count}</span>`;
+                        if (data.summary.last_operation) {
+                            html += `<span>最近操作: ${data.summary.last_operation.timestamp}</span>`;
+                        }
+                        html += `</div>`;
+                    }
+                    
+                    if (data.history && data.history.length > 0) {
+                        html += `<div style="font-size: 12px; color: #6c757d; margin-top: 10px;">`;
+                        html += `<div style="font-weight: 600; margin-bottom: 5px;">最近操作历史:</div>`;
+                        html += `<div style="max-height: 100px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 6px; padding: 8px;">`;
+                        data.history.slice().reverse().forEach(op => {
+                            html += `<div style="margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #f8f9fa;">`;
+                            html += `<span style="font-weight: 600;">${op.intent}</span> - `;
+                            html += `<span style="color: ${op.risk_level === 'high' ? '#dc3545' : 'inherit'};">${op.risk_level}</span>`;
+                            html += ` - <span style="color: #6c757d;">${op.timestamp}</span>`;
+                            html += `</div>`;
+                        });
+                        html += `</div></div>`;
+                    } else if (!data.summary || data.summary.total_operations === 0) {
+                        html += `<span>暂无操作记录</span>`;
+                    }
+                    
+                    securityInfo.innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('security-info').innerHTML = '<span style="color: #dc3545;">⚠️ 安全信息获取失败</span>';
+                });
+        }
+        
+        let conversationHistory = [];
+        
+        function addMessage(type, content) {
+            let container = document.getElementById('chat-container');
+            let messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+            
+            if (type === 'agent') {
+                messageDiv.innerHTML = `<div class="sender">🤖 智能代理</div><div class="content">${content}</div>`;
+            } else if (type === 'user') {
+                messageDiv.innerHTML = `<div class="content">${content}</div>`;
+            } else if (type === 'system') {
+                messageDiv.innerHTML = `<div class="sender">⚠️ 系统消息</div><div class="content">${content}</div>`;
+            }
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function sendMessage() {
+            let input = document.getElementById('user-input');
+            let message = input.value.trim();
+            
+            if (!message) return;
+            
+            addMessage('user', message);
+            conversationHistory.push({'role': 'user', 'content': message});
+            input.value = '';
+            
+            addMessage('agent', '⏳ 正在处理您的请求...');
+            
+            let lastAgentMessage = document.getElementById('chat-container').lastElementChild;
+            
+            fetch('/api/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input: message, history: conversationHistory })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('chat-container').removeChild(lastAgentMessage);
+                
+                if (data.status === 'error') {
+                    let errorHtml = `❌ ${data.message}`;
+                    if (data.details && data.details.length > 0) {
+                        errorHtml += '<div style="margin-top: 10px; font-size: 13px;">';
+                        data.details.forEach(d => {
+                            errorHtml += `<div style="margin-bottom: 5px;">• ${d}</div>`;
+                        });
+                        errorHtml += '</div>';
+                    }
+                    addMessage('system', errorHtml);
+                    conversationHistory.push({'role': 'assistant', 'content': data.message});
+                    return;
+                }
+                
+                if (data.status === 'risk') {
+                    let riskHtml = `⚠️ 此操作风险较高，需要确认后执行<br><br>`;
+                    riskHtml += `<strong>操作类型：</strong>${data.intent}<br>`;
+                    if (data.details) {
+                        riskHtml += `<strong>风险说明：</strong><br>`;
+                        if (Array.isArray(data.details)) {
+                            data.details.forEach(d => {
+                                riskHtml += `• ${d}<br>`;
+                            });
+                        } else {
+                            riskHtml += `${data.details}<br>`;
+                        }
+                    }
+                    addMessage('system', riskHtml);
+                    conversationHistory.push({'role': 'assistant', 'content': data.message});
+                    return;
+                }
+                
+                let responseHtml = '';
+                if (data.result) {
+                    responseHtml = data.result;
+                } else if (data.message) {
+                    responseHtml = data.message;
+                } else {
+                    responseHtml = '操作已完成';
+                }
+                
+                addMessage('agent', responseHtml);
+                conversationHistory.push({'role': 'assistant', 'content': responseHtml});
+                
+                if (data.security_explanation) {
+                    let explanationHtml = '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e9ecef;">';
+                    explanationHtml += '<strong style="color: #667eea;">🛡️ 安全说明：</strong><br>';
+                    explanationHtml += `<span style="font-size: 13px; color: #6c757d;">${data.security_explanation.summary || '无'}</span>`;
+                    explanationHtml += '</div>';
+                    
+                    lastAgentMessage = document.getElementById('chat-container').lastElementChild;
+                    lastAgentMessage.querySelector('.content').innerHTML += explanationHtml;
+                }
+            })
+            .catch(error => {
+                document.getElementById('chat-container').removeChild(lastAgentMessage);
+                addMessage('system', '❌ 请求失败：' + error.message);
+            });
+        }
+        
+        function quickAction(action) {
+            document.getElementById('user-input').value = action;
+            sendMessage();
+        }
+        
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        const configBtn = document.getElementById('config-btn');
+        const configModal = document.createElement('div');
+        configModal.id = 'config-modal';
+        configModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        `;
+        
+        const configContent = document.createElement('div');
+        configContent.style.cssText = `
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        `;
+        
+        configContent.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #495057;">⚙️ 模型配置</h3>
+                <button id="close-config" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6c757d;">×</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #495057;">模型地址</label>
+                <input type="text" id="model-base-url" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px;" placeholder="https://api-inference.modelscope.cn/v1">
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #495057;">API密钥</label>
+                <input type="password" id="model-api-key" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px;" placeholder="输入API密钥">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #495057;">模型名称</label>
+                <input type="text" id="model-name" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px;" placeholder="Qwen/Qwen3-235B-A22B-Instruct-2507">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="save-config" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">保存配置</button>
+                <button id="reset-config" style="flex: 1; padding: 10px; background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">重置</button>
+            </div>
+        `;
+        
+        configModal.appendChild(configContent);
+        document.body.appendChild(configModal);
+        
+        configBtn.addEventListener('click', function() {
+            loadConfig();
+            configModal.style.display = 'flex';
+        });
+        
+        document.getElementById('close-config').addEventListener('click', function() {
+            configModal.style.display = 'none';
+        });
+        
+        configModal.addEventListener('click', function(e) {
+            if (e.target === configModal) {
+                configModal.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('save-config').addEventListener('click', function() {
+            const baseUrl = document.getElementById('model-base-url').value;
+            const apiKey = document.getElementById('model-api-key').value;
+            const modelName = document.getElementById('model-name').value;
+            
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    base_url: baseUrl,
+                    api_key: apiKey,
+                    model_name: modelName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addMessage('system', '✅ 配置已保存成功！系统将使用新的配置。');
+                    configModal.style.display = 'none';
+                } else {
+                    addMessage('system', '❌ 配置保存失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                addMessage('system', '❌ 配置保存失败：' + error.message);
+            });
+        });
+        
+        document.getElementById('reset-config').addEventListener('click', function() {
+            document.getElementById('model-base-url').value = 'https://api-inference.modelscope.cn/v1';
+            document.getElementById('model-api-key').value = '';
+            document.getElementById('model-name').value = 'Qwen/Qwen3-235B-A22B-Instruct-2507';
+        });
+        
+        function loadConfig() {
+            fetch('/api/config')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('model-base-url').value = data.base_url || 'https://api-inference.modelscope.cn/v1';
+                document.getElementById('model-name').value = data.model_name || 'Qwen/Qwen3-235B-A22B-Instruct-2507';
+                document.getElementById('model-api-key').value = '';
+            })
+            .catch(error => {
+                console.error('加载配置失败:', error);
+                document.getElementById('model-base-url').value = 'https://api-inference.modelscope.cn/v1';
+                document.getElementById('model-api-key').value = '';
+                document.getElementById('model-name').value = 'Qwen/Qwen3-235B-A22B-Instruct-2507';
+            });
+        }
+    </script>
+</body>
+</html>
